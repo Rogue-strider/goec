@@ -180,9 +180,22 @@ func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) AddToCart(ctx *fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{
-		"message": "add to cart",
-	})
+	req := dto.CreateCartRequest{}
+	if err := ctx.BodyParser(&req); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "please provide a valid product and qty",
+		})
+	}
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+
+	// call user service and perform create cart
+	cartItems, err := h.svc.CreateCart(req, user)
+	if err != nil {
+		return rest.InternalError(ctx, err)
+	}
+
+	return rest.SuccessResponse(ctx, "cart created successfully", cartItems)
 }
 
 func (h *UserHandler) GetCart(ctx *fiber.Ctx) error {
